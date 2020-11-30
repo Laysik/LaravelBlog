@@ -6,6 +6,7 @@ use App\Models\BlogCategory;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Blog\Admin\BaseController;
 use App\Http\Requests\BlogCategoryUpdateRequest;
+use App\Http\Requests\BlogCategoryCreateRequest;
 
 class CategoryController extends BaseController
 {
@@ -39,7 +40,7 @@ class CategoryController extends BaseController
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(BlogCategoryCreateRequest $request)
     {
@@ -49,9 +50,20 @@ class CategoryController extends BaseController
         }
 
         // Создаем объект но не добавляем в БД
-        $item = new BlogCategory($data);
-        $item->save();
+//        $item = new BlogCategory($data);
+//        $item->save();
 
+        // Создаем объект и добавляем в БД
+
+        $item = (new BlogCategory())->create($data);
+
+        if ($item) {
+            return redirect()->route('blog.admin.categories.edit', [$item->id])
+                ->with(['success' => 'Успешно сохранено']);
+        } else {
+            return back()->withErrors(['msg' => 'Ошибка сохранения'])
+                ->withInput();
+        }
     }
 
 
@@ -107,7 +119,14 @@ class CategoryController extends BaseController
                 ->withInput();
         }
         $data = $request->all();
-        $result = $item->fill($data)->save();
+
+        if (empty($data['slug'])) {
+            $data['slug'] = str_slug($data['title']);
+        }
+
+        // $result = $item->fill($data)->save();
+
+        $result = $item->update($data);
 
         if ($result) {
             return redirect()
